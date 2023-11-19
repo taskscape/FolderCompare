@@ -31,7 +31,8 @@ if (filesInDestination.Length == 0)
 Console.WriteLine("Listing files only in the source folder...");
 List<string> uniqueFiles = CompareFolders(sourceFolder, destinationFolder);
 
-string uniqueFilesFile = Path.Combine(sourceFolder, "OrphanedFiles.txt");
+string temporaryFolder = Path.GetTempPath();
+string uniqueFilesFile = Path.Combine(temporaryFolder, "uniqueFiles.txt");
 
 if (File.Exists(uniqueFilesFile))
 {
@@ -61,11 +62,12 @@ foreach (string file in filesInDestination)
         {
             changedOrNewFiles.Add(file);
         }
-
     }
 }
 
-string zipFilePath = Path.Combine(sourceFolder, "ChangedFiles.zip");
+Console.WriteLine("Please enter the full name for the output archive (blank for ChangedFiles.zip in system's temporary folder)");
+string? zipFilePath = Console.ReadLine() ?? Path.Combine(temporaryFolder, "ChangedFiles.zip");
+
 if (File.Exists(zipFilePath))
 {
     ConsoleKeyInfo choice = Choice("ChangedFiles.zip already exists. Do you want to overwrite file or cancel? (o/esc)?");
@@ -90,13 +92,14 @@ if (IsFileInUse(zipFilePath))
 
 using (ZipArchive zip = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
 {
-    zip.CreateEntryFromFile(uniqueFilesFile, uniqueFilesFile[(destinationFolder.Length + 1)..]);
+    zip.CreateEntryFromFile(uniqueFilesFile, uniqueFilesFile[(temporaryFolder.Length + 1)..]);
+    File.Delete(uniqueFilesFile);
+
     foreach (string file in changedOrNewFiles)
     {
         string relativePath = file[(destinationFolder.Length + 1)..];
         zip.CreateEntryFromFile(file, relativePath);
     }
-
 }
 
 Exit($"Zip file created at: {zipFilePath}");
